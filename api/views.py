@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.db import connection
 from django.db.models import Count, Sum, ExpressionWrapper, F, Q
 from django.db.models.functions import Coalesce
 from django.db.models import FloatField
@@ -13,7 +14,7 @@ class LessonListAPIView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     def get(self, request):
         user = request.user
-        product_access_list = ProductAccess.objects.filter(user=user)
+        product_access_list = ProductAccess.objects.select_related('product').filter(user=user)
         products = [access.product for access in product_access_list]
         lesson_list = Lesson.objects.filter(products__in=products)
 
@@ -65,6 +66,7 @@ class ProductLessonListAPIView(APIView):
                 lesson['status'] = "Не просмотрено"
                 lesson['duration'] = None
                 lesson['last_change'] = None
+
 
         return Response(serialized_lessons, status=status.HTTP_200_OK)
 

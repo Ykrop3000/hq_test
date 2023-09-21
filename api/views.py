@@ -4,12 +4,13 @@ from django.db.models.functions import Coalesce
 from django.db.models import FloatField
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, permissions
 from main.models import Lesson, ProductAccess, LessonViewHistory, Product
 from .serializers import LessonSerializer, LessonViewHistorySerializer
 
 
 class LessonListAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
     def get(self, request):
         user = request.user
         product_access_list = ProductAccess.objects.filter(user=user)
@@ -18,9 +19,7 @@ class LessonListAPIView(APIView):
 
         serialized_lessons = LessonSerializer(lesson_list, many=True).data
 
-        lesson_ids = [lesson['id'] for lesson in serialized_lessons]
-
-        lesson_view_history = LessonViewHistory.objects.filter(lesson__in=lesson_ids, user=user).order_by('lesson', 'duration')
+        lesson_view_history = LessonViewHistory.objects.filter(lesson__in=lesson_list, user=user).order_by('lesson', 'duration')
         lesson_view_history_dict = {history.lesson_id: history for history in lesson_view_history}
 
         for lesson in serialized_lessons:
@@ -36,6 +35,8 @@ class LessonListAPIView(APIView):
 
 
 class ProductLessonListAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request, product_id):
         user = request.user
 
@@ -51,9 +52,7 @@ class ProductLessonListAPIView(APIView):
 
         serialized_lessons = LessonSerializer(lesson_list, many=True).data
 
-        lesson_ids = [lesson['id'] for lesson in serialized_lessons]
-
-        lesson_view_history = LessonViewHistory.objects.filter(lesson__in=lesson_ids, user=user).order_by('lesson', '-duration')
+        lesson_view_history = LessonViewHistory.objects.filter(lesson__in=lesson_list, user=user).order_by('lesson', '-duration')
         lesson_view_history_dict = {history.lesson_id: history for history in lesson_view_history}
 
         for lesson in serialized_lessons:
@@ -70,6 +69,8 @@ class ProductLessonListAPIView(APIView):
         return Response(serialized_lessons, status=status.HTTP_200_OK)
 
 class ProductStatisticsAPIView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
     def get(self, request):
         products = Product.objects.all()
 
